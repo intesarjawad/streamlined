@@ -5,11 +5,12 @@ import { motion } from "motion/react";
 import { 
   Play, Pause, Volume2, VolumeX, 
   Settings, Maximize, SkipBack, SkipForward,
-  ChevronUp, ChevronDown
+  ChevronUp, ChevronDown, Check, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import YouTube from "react-youtube";
 import type { YouTubeEvent, YouTubePlayer, Options } from 'react-youtube';
 
 interface VideoPlayerProps {
@@ -29,8 +30,10 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [quality, setQuality] = useState("auto");
   const [showControls, setShowControls] = useState(true);
-  const [availableQualities, setAvailableQualities] = useState([]);
+  const [availableQualities, setAvailableQualities] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const [activeSettings, setActiveSettings] = useState<'speed' | 'quality' | null>(null);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -44,9 +47,24 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
     return () => clearTimeout(timeout);
   }, [showControls, playing]);
 
+  const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
   const handleReady = (event: YouTubeEvent) => {
     setPlayer(event.target);
-    setAvailableQualities(event.target.getAvailableQualityLevels());
+    
+    // Force load available qualities
+    setTimeout(() => {
+      const qualities = event.target.getAvailableQualityLevels();
+      console.log('Available qualities:', qualities); // For debugging
+      setAvailableQualities(qualities);
+      
+      // Set initial quality to highest available
+      if (qualities.length > 0) {
+        const bestQuality = qualities[0];
+        setQuality(bestQuality);
+        event.target.setPlaybackQuality(bestQuality);
+      }
+    }, 1000); // Give player time to initialize
   };
 
   const handleStateChange = (event: YouTubeEvent) => {
@@ -104,9 +122,22 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
     player.setPlaybackRate(rate);
   };
 
-  const handleQualityChange = (quality: string) => {
-    setQuality(quality);
-    player.setPlaybackQuality(quality);
+  const handleQualityChange = (newQuality: string) => {
+    console.log('Setting quality to:', newQuality);
+    setQuality(newQuality);
+    
+    if (player) {
+      // Force quality change
+      player.setPlaybackQuality(newQuality);
+      
+      // If current video time is available, reload video at current time with new quality
+      const currentTime = player.getCurrentTime();
+      player.loadVideoById({
+        videoId,
+        startSeconds: currentTime,
+        suggestedQuality: newQuality
+      });
+    }
   };
 
   const skipForward = () => {
@@ -136,30 +167,78 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
       controls: 0,
       modestbranding: 1,
       rel: 0,
+      showinfo: 0,
+      iv_load_policy: 3,
+      fs: 0,
     },
+  };
+
+  const handleFullscreen = () => {
+    if (!playerContainerRef.current) return;
+    
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      playerContainerRef.current.requestFullscreen();
+    }
+  };
+
+  const qualityLabels: Record<string, string> = {
+    auto: 'Auto',
+    highres: '4K',
+    hd2160: '4K',
+    hd1440: '1440p',
+    hd1080: '1080p',
+    hd720: '720p',
+    large: '480p',
+    medium: '360p',
+    small: '240p',
+    tiny: '144p',
+    default: 'Auto'
   };
 
   return (
     <div 
-      className="relative w-full h-full"
+      ref={playerContainerRef}
+      className="relative w-full h-full rounded-lg overflow-hidden"
       onMouseMove={() => setShowControls(true)}
       onMouseLeave={() => playing && setShowControls(false)}
     >
       <YouTube
         ref={playerRef}
         videoId={videoId}
-        opts={opts}
+        opts={{
+          ...opts,
+          width: '100%',
+          height: '100%',
+          playerVars: {
+            ...opts.playerVars,
+            playsinline: 1,
+            vq: quality // Use current quality setting
+          }
+        }}
         onReady={handleReady}
         onStateChange={handleStateChange}
-        className="w-full h-full"
+        className="absolute inset-0 w-full h-full"
+        style={{ position: 'absolute' }}
       />
 
       {/* Video Controls */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: showControls ? 1 : 0 }}
-        className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4"
+        className={cn(
+          "absolute bottom-0 left-0 right-0",
+          "p-6 pb-4",
+          "bg-gradient-to-t from-black/90 via-black/50 to-transparent",
+          "transition-opacity duration-200"
+        )}
       >
+        {/* Title */}
+        <h2 className="text-white text-lg font-medium mb-4 line-clamp-1">
+          {title}
+        </h2>
+
         {/* Progress Bar */}
         <Slider
           value={[currentTime * 100 / duration]}
@@ -225,69 +304,46 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowSettings(!showSettings)}
-                className="text-white hover:bg-white/20"
+                onClick={() => setActiveSettings(activeSettings === 'speed' ? null : 'speed')}
+                className="text-white hover:bg-white/20 h-9 w-9"
               >
-                <Settings className="h-5 w-5" />
+                <Clock className="h-4 w-4" />
               </Button>
 
-              {showSettings && (
-                <div className="absolute bottom-full right-0 mb-2 w-48 bg-black/90 rounded-lg p-2">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-white mb-2">Playback Speed</p>
-                      {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4].map((rate) => (
-                        <button
-                          key={rate}
-                          onClick={() => handlePlaybackRateChange(rate)}
-                          className={cn(
-                            "block w-full text-left px-2 py-1 text-sm rounded",
-                            playbackRate === rate
-                              ? "bg-white/20 text-white"
-                              : "text-white/70 hover:bg-white/10"
-                          )}
-                        >
-                          {rate}x
-                        </button>
-                      ))}
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-white mb-2">Quality</p>
-                      {availableQualities.map((q) => (
-                        <button
-                          key={q}
-                          onClick={() => handleQualityChange(q)}
-                          className={cn(
-                            "block w-full text-left px-2 py-1 text-sm rounded",
-                            quality === q
-                              ? "bg-white/20 text-white"
-                              : "text-white/70 hover:bg-white/10"
-                          )}
-                        >
-                          {q}
-                        </button>
-                      ))}
-                    </div>
+              {activeSettings === 'speed' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute right-0 bottom-full mb-2 bg-black/90 rounded-lg overflow-hidden"
+                >
+                  <div className="py-1">
+                    {PLAYBACK_SPEEDS.map(rate => (
+                      <button
+                        key={rate}
+                        onClick={() => {
+                          handlePlaybackRateChange(rate);
+                          setActiveSettings(null);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-1.5 text-sm text-white/90 hover:bg-white/10 flex items-center",
+                          playbackRate === rate && "bg-white/20 text-white"
+                        )}
+                      >
+                        {rate === 1 ? 'Normal' : `${rate}x`}
+                      </button>
+                    ))}
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
 
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                const elem = document.documentElement;
-                if (document.fullscreenElement) {
-                  document.exitFullscreen();
-                } else {
-                  elem.requestFullscreen();
-                }
-              }}
-              className="text-white hover:bg-white/20"
+              onClick={handleFullscreen}
+              className="text-white hover:bg-white/20 h-9 w-9"
             >
-              <Maximize className="h-5 w-5" />
+              <Maximize className="h-4 w-4" />
             </Button>
           </div>
         </div>
