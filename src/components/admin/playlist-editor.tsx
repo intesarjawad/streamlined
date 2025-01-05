@@ -16,12 +16,17 @@ import {
   Loader2,
   Check,
   ArrowLeft,
-  Clock
+  Clock,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { formatDuration } from "@/lib/format";
+import { PublishedUrlCard } from "@/components/admin/published-url-card";
+import { buttonStyles } from "@/lib/button-styles";
+import { typographyStyles } from "@/lib/typography-styles";
 
 interface Video {
   id: string;
@@ -44,23 +49,36 @@ interface PlaylistEditorProps {
   initialData: PlaylistData;
   onSave: (data: PlaylistData, isDraft: boolean) => Promise<void>;
   onRefresh: () => Promise<void>;
+  isPublished?: boolean;
 }
 
 export default function PlaylistEditor({ 
   initialData, 
   onSave,
-  onRefresh 
+  onRefresh,
+  isPublished = false
 }: PlaylistEditorProps) {
   const [data, setData] = useState<PlaylistData>(initialData);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
+
+  useEffect(() => {
+    const hasDataChanged = JSON.stringify(data) !== JSON.stringify(initialData);
+    setHasChanges(hasDataChanged);
+  }, [data, initialData]);
+
+  const handleDataChange = (newData: Partial<PlaylistData>) => {
+    setData(prev => ({ ...prev, ...newData }));
+  };
 
   const handleSave = async (isDraft = false) => {
     setSaving(true);
@@ -103,87 +121,139 @@ export default function PlaylistEditor({
 
   return (
     <div className="space-y-6">
-      <MagicCard className="space-y-6 p-6">
+      <MagicCard className="space-y-8 p-6">
         <div className="space-y-3">
-          <label className="text-base font-medium">Playlist Name</label>
+          <label className={typographyStyles.formLabel}>
+            Playlist Name
+          </label>
           <Input
             value={data.name}
-            onChange={(e) => setData({ ...data, name: e.target.value })}
-            className="text-lg"
+            onChange={(e) => handleDataChange({ name: e.target.value })}
+            className={typographyStyles.formInput}
           />
         </div>
 
         <div className="space-y-3">
-          <label className="text-base font-medium">Description</label>
+          <label className={typographyStyles.formLabel}>
+            Description
+          </label>
           <Textarea
             value={data.description}
-            onChange={(e) => setData({ ...data, description: e.target.value })}
-            className="text-base min-h-[160px]"
+            onChange={(e) => handleDataChange({ description: e.target.value })}
+            className={cn(
+              "text-base min-h-[160px]",
+              "text-white/70",
+              "bg-black/40"
+            )}
             rows={6}
           />
         </div>
 
         <div className="space-y-3">
-          <label className="text-base font-medium">Tags</label>
+          <label className={typographyStyles.formLabel}>
+            Tags
+          </label>
           <Input
             value={data.tags?.join(", ")}
             onChange={(e) => 
-              setData({ 
-                ...data, 
+              handleDataChange({ 
                 tags: e.target.value.split(",").map(tag => tag.trim()) 
               })
             }
             placeholder="Enter tags separated by commas"
-            className="text-base"
+            className={cn(
+              "text-base",
+              "text-white/70",
+              "bg-black/40",
+              "placeholder:text-white/30"
+            )}
           />
         </div>
       </MagicCard>
 
+      {isPublished && !hasChanges && (
+        <PublishedUrlCard playlistId={initialData.id} />
+      )}
+
       {/* Action Buttons - Reorganized */}
       <div className="flex flex-col gap-4">
         <div className="flex gap-4">
+          {(isPublished && !hasChanges) ? (
+            <Link href={`/playlists/${initialData.id}`} className="flex-1">
+              <Button
+                variant="outline"
+                size="lg"
+                className={cn(
+                  "w-full gap-2 text-base",
+                  buttonStyles.secondary.default
+                )}
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Playlist
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              size="lg"
+              className={cn(
+                "flex-1 gap-2 text-base",
+                buttonStyles.secondary.default,
+                saveSuccess && buttonStyles.primary.success
+              )}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving Draft...
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save Draft
+                </>
+              )}
+            </Button>
+          )}
           <Button
-            variant="outline"
-            onClick={() => handleSave(true)}
+            onClick={() => {
+              const shouldBeDraft = isPublished && !hasChanges ? true : false;
+              handleSave(shouldBeDraft);
+            }}
             disabled={saving}
             size="lg"
             className={cn(
-              "flex-1 gap-2 transition-colors text-base",
-              saveSuccess && "bg-green-500/10 text-green-500 border-green-500/50"
+              "flex-1 gap-2 text-base",
+              isPublished && !hasChanges 
+                ? buttonStyles.primary.destructive
+                : buttonStyles.primary.default
             )}
           >
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Saving Draft...
-              </>
-            ) : saveSuccess ? (
-              <>
-                <Check className="h-4 w-4" />
-                Saved!
+                {isPublished ? "Unpublishing..." : "Publishing..."}
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
-                Save Draft
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            size="lg"
-            className="flex-1 gap-2 text-base"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Publishing...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Publish
+                {isPublished && !hasChanges ? (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Unpublish
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    {hasChanges ? "Publish Changes" : "Publish"}
+                  </>
+                )}
               </>
             )}
           </Button>
@@ -194,7 +264,10 @@ export default function PlaylistEditor({
             <Button
               variant="outline"
               size="lg"
-              className="w-full gap-2 text-base"
+              className={cn(
+                "w-full gap-2 text-base",
+                buttonStyles.secondary.default
+              )}
             >
               <ArrowLeft className="h-5 w-5" />
               Back to Playlists
@@ -207,7 +280,8 @@ export default function PlaylistEditor({
             size="lg"
             className={cn(
               "flex-1 gap-2 text-base",
-              updateSuccess && "bg-green-500/10 text-green-500 border-green-500/50"
+              buttonStyles.secondary.default,
+              updateSuccess && buttonStyles.primary.success
             )}
           >
             {refreshing ? (

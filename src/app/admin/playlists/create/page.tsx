@@ -15,6 +15,9 @@ import { usePlaylistStore } from "@/store/playlist-store";
 import { useRouter } from "next/navigation";
 import { VideoList } from "@/components/admin/video-list";
 import { PlaylistPlaceholder } from "@/components/admin/playlist-placeholder";
+import { PublishSuccessModal } from "@/components/admin/publish-success-modal";
+import { PublishedUrlCard } from "@/components/admin/published-url-card";
+import { buttonStyles } from "@/lib/button-styles";
 
 interface Video {
   id: string;
@@ -39,6 +42,8 @@ export default function CreatePlaylistPage() {
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [playlistData, setPlaylistData] = useState<PlaylistData | null>(null);
   const { toast } = useToast();
+  const [showPublishSuccess, setShowPublishSuccess] = useState(false);
+  const [publishedId, setPublishedId] = useState<string | null>(null);
 
   const fetchPlaylistData = async () => {
     if (!playlistUrl) {
@@ -77,26 +82,24 @@ export default function CreatePlaylistPage() {
 
   const handleSave = async (data: PlaylistData, isDraft: boolean) => {
     try {
+      const id = crypto.randomUUID();
       addPlaylist({
         ...data,
+        id,
         isDraft,
         thumbnail: data.videos[0]?.thumbnail,
         youtubeUrl: playlistUrl,
       });
       
-      toast({
-        title: isDraft ? "Draft Saved" : "Playlist Published",
-        description: isDraft 
-          ? "Your playlist has been saved as a draft."
-          : "Your playlist has been published successfully!",
-        variant: "success",
-      });
-
-      // Only redirect if publishing, not when saving draft
       if (!isDraft) {
-        setTimeout(() => {
-          router.push('/admin/playlists');
-        }, 2000);
+        setPublishedId(id);
+        setShowPublishSuccess(true);
+      } else {
+        toast({
+          title: "Draft Saved",
+          description: "Your playlist has been saved as a draft.",
+          variant: "success",
+        });
       }
     } catch (error) {
       toast({
@@ -187,7 +190,10 @@ export default function CreatePlaylistPage() {
                     <Button 
                       onClick={fetchPlaylistData}
                       disabled={loading}
-                      className="shrink-0 h-9 px-4 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/50"
+                      className={cn(
+                        "shrink-0 h-9 px-4",
+                        buttonStyles.secondary.default
+                      )}
                     >
                       {loading ? (
                         <>
@@ -226,6 +232,7 @@ export default function CreatePlaylistPage() {
                 onRefresh={async () => {
                   await fetchPlaylistData();
                 }}
+                isPublished={false}
               />
             </motion.div>
           )}
@@ -310,6 +317,17 @@ export default function CreatePlaylistPage() {
           </motion.div>
         )}
       </motion.div>
+
+      {showPublishSuccess && publishedId && (
+        <PublishSuccessModal
+          playlistId={publishedId}
+          playlistName={playlistData?.name || ""}
+          onClose={() => {
+            setShowPublishSuccess(false);
+            router.push('/admin/playlists');
+          }}
+        />
+      )}
     </div>
   );
 } 

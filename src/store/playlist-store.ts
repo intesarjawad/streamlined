@@ -45,12 +45,17 @@ export const usePlaylistStore = create<PlaylistStore>()(
             },
           ],
         })),
-      updatePlaylist: (id, playlist) =>
+      updatePlaylist: (id, updatedPlaylist) =>
         set((state) => ({
-          playlists: state.playlists.map((p) =>
-            p.id === id
-              ? { ...p, ...playlist, updatedAt: new Date() }
-              : p
+          playlists: state.playlists.map((playlist) => 
+            playlist.id === id 
+              ? {
+                  ...playlist,
+                  ...updatedPlaylist,
+                  isDraft: updatedPlaylist.isDraft,
+                  updatedAt: new Date()
+                }
+              : playlist
           ),
         })),
       deletePlaylist: (id) =>

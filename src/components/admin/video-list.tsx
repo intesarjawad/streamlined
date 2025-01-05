@@ -1,121 +1,164 @@
-import { Reorder } from "motion/react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+"use client";
+
+import { motion, Reorder, AnimatePresence } from "motion/react";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { GripVertical, Trash2, Clock } from "lucide-react";
-import { formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { formatDuration } from "@/lib/format";
+import { buttonStyles } from "@/lib/button-styles";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { typographyStyles } from "@/lib/typography-styles";
 
 interface Video {
   id: string;
   title: string;
   duration: string;
   thumbnail: string;
-  url: string;
 }
 
 interface VideoListProps {
   videos: Video[];
   onReorder: (videos: Video[]) => void;
-  onVideoUpdate: (videoId: string, updates: Partial<Video>) => void;
-  onVideoDelete: (videoId: string) => void;
+  onVideoUpdate?: (id: string, updates: Partial<Video>) => void;
+  onVideoDelete?: (id: string) => void;
 }
 
-export function VideoList({
-  videos,
-  onReorder,
-  onVideoUpdate,
-  onVideoDelete,
-}: VideoListProps) {
+export function VideoList({ videos, onReorder, onVideoUpdate, onVideoDelete }: VideoListProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   return (
-    <ScrollArea className="h-[800px] pr-4">
-      <Reorder.Group 
-        axis="y" 
-        values={videos} 
-        onReorder={onReorder}
-        className="space-y-4"
-        layout
-        transition={{
-          duration: 0.2,
-          ease: "easeInOut"
-        }}
-      >
-        {videos.map((video, index) => (
+    <Reorder.Group 
+      axis="y" 
+      values={videos} 
+      onReorder={onReorder}
+      className="space-y-3"
+    >
+      <AnimatePresence mode="popLayout">
+        {videos.map((video) => (
           <Reorder.Item
             key={video.id}
             value={video}
-            initial={false}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              transition: { duration: 0.2 }
-            }}
-            exit={{ scale: 0.95, opacity: 0 }}
+            className="relative"
+            layoutId={video.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             whileDrag={{ 
               scale: 1.02,
               boxShadow: "0 8px 20px rgb(0 0 0 / 0.3)",
               cursor: "grabbing"
             }}
-            dragTransition={{
-              bounceStiffness: 300,
-              bounceDamping: 20
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              mass: 0.8,
+              layout: {
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              }
             }}
-            className={cn(
-              "group bg-card/50 rounded-lg p-4 cursor-move transition-all duration-200",
-              "hover:bg-card/80 border border-white/5 hover:border-white/10",
-              "relative overflow-hidden",
-              "active:scale-[1.02] active:cursor-grabbing",
-              "hover:shadow-lg hover:shadow-black/20",
-              "transform-gpu"
-            )}
           >
-            {/* Gradient hover effect */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-neon-blue/5 via-transparent to-transparent" />
+            <motion.div
+              className={cn(
+                "flex items-center gap-4 p-3 rounded-lg",
+                "bg-black/40 border border-white/5",
+                "group hover:bg-black/60 hover:border-white/10",
+                "transition-colors relative overflow-hidden",
+                "active:scale-[1.02] active:cursor-grabbing",
+              )}
+              layout
+            >
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-neon-blue/5 via-transparent to-transparent" />
 
-            <div className="relative flex gap-4 items-center">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  className="flex items-center gap-3 cursor-grab active:cursor-grabbing"
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ duration: 0.2 }}
+              <div className="relative flex items-center gap-4 w-full">
+                <div
+                  className={cn(
+                    "p-2 -m-2",
+                    "text-white/40 hover:text-white/60",
+                    "cursor-grab active:cursor-grabbing",
+                    "transition-colors"
+                  )}
                 >
-                  <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                </motion.div>
-                <div className="w-8 h-8 rounded-full bg-neon-blue/10 text-neon-blue flex items-center justify-center text-base font-medium flex-shrink-0">
-                  {index + 1}
+                  <GripVertical className="h-5 w-5" />
+                </div>
+
+                <div className="relative flex-shrink-0">
+                  <img
+                    src={video.thumbnail}
+                    alt=""
+                    className="w-32 h-20 object-cover rounded"
+                  />
+                  <div className="absolute bottom-1 right-1 bg-black/80 px-1 rounded text-xs">
+                    {formatDuration(video.duration)}
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  {editingId === video.id ? (
+                    <Input
+                      autoFocus
+                      defaultValue={video.title}
+                      className={cn(
+                        "text-base text-white/90",
+                        "bg-black/60",
+                        "border-neon-blue/30",
+                        "focus-visible:ring-neon-blue/30"
+                      )}
+                      onBlur={(e) => {
+                        setEditingId(null);
+                        if (e.target.value !== video.title) {
+                          onVideoUpdate?.(video.id, { title: e.target.value });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                        if (e.key === 'Escape') {
+                          setEditingId(null);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <p className="text-base text-white/90 truncate">
+                      {video.title}
+                    </p>
+                  )}
+                  <p className="text-sm text-white/50">
+                    {formatDuration(video.duration)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onVideoUpdate && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={buttonStyles.ghost.default}
+                      onClick={() => setEditingId(video.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onVideoDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={buttonStyles.ghost.destructive}
+                      onClick={() => onVideoDelete(video.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                className="w-40 h-24 object-cover rounded flex-shrink-0"
-              />
-              <div className="flex-1 space-y-3 min-w-0">
-                <Input
-                  value={video.title}
-                  onChange={(e) => onVideoUpdate(video.id, { title: e.target.value })}
-                  className="text-base bg-background/50"
-                />
-                <p className="text-base text-muted-foreground flex items-center gap-2">
-                  <span className="inline-flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded">
-                    <Clock className="h-4 w-4" />
-                    {formatDuration(video.duration)}
-                  </span>
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive flex-shrink-0 h-10 w-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onVideoDelete(video.id)}
-              >
-                <Trash2 className="h-5 w-5" />
-              </Button>
-            </div>
+            </motion.div>
           </Reorder.Item>
         ))}
-      </Reorder.Group>
-    </ScrollArea>
+      </AnimatePresence>
+    </Reorder.Group>
   );
 } 

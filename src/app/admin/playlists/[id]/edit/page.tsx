@@ -13,6 +13,9 @@ import { VideoList } from "@/components/admin/video-list";
 import { cn } from "@/lib/utils";
 import { MagicCard } from "@/components/ui/magic-card";
 import { Input } from "@/components/ui/input";
+import { PublishSuccessModal } from "@/components/admin/publish-success-modal";
+import { PublishedUrlCard } from "@/components/admin/published-url-card";
+import { buttonStyles } from "@/lib/button-styles";
 
 export default function EditPlaylistPage() {
   const router = useRouter();
@@ -21,6 +24,7 @@ export default function EditPlaylistPage() {
   const [playlist, setPlaylist] = useState(null);
   const [loading, setLoading] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
+  const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   
   const updatePlaylist = usePlaylistStore((state) => state.updatePlaylist);
   const playlists = usePlaylistStore((state) => state.playlists);
@@ -43,24 +47,35 @@ export default function EditPlaylistPage() {
 
   const handleSave = async (data: PlaylistData, isDraft: boolean) => {
     try {
-      updatePlaylist(params.id as string, {
+      const isUnpublishing = !playlist.isDraft && isDraft;
+      
+      const updatedPlaylist = {
         ...data,
-        isDraft,
+        id: playlist.id,
+        isDraft: isDraft,
+        youtubeUrl: playlistUrl,
         updatedAt: new Date(),
-      });
+      };
+
+      setPlaylist(updatedPlaylist);
+      updatePlaylist(playlist.id, updatedPlaylist);
       
       toast({
-        title: isDraft ? "Draft Updated" : "Playlist Published",
-        description: isDraft 
-          ? "Your changes have been saved."
-          : "Your playlist has been published successfully!",
+        title: isUnpublishing 
+          ? "Playlist Unpublished" 
+          : isDraft 
+            ? "Draft Updated" 
+            : "Playlist Published",
+        description: isUnpublishing
+          ? "Your playlist has been unpublished and saved as a draft."
+          : isDraft 
+            ? "Your changes have been saved."
+            : "Your playlist has been published successfully!",
         variant: "success",
       });
 
-      if (!isDraft) {
-        setTimeout(() => {
-          router.push('/admin/playlists');
-        }, 2000);
+      if (!isDraft && !isUnpublishing && hasChanges) {
+        setShowPublishSuccess(true);
       }
     } catch (error) {
       toast({
@@ -185,7 +200,10 @@ export default function EditPlaylistPage() {
                     <Button 
                       onClick={fetchPlaylistData}
                       disabled={loading}
-                      className="shrink-0 h-9 px-4 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/50"
+                      className={cn(
+                        "shrink-0 h-9 px-4",
+                        buttonStyles.primary.default
+                      )}
                     >
                       {loading ? (
                         <>
@@ -211,6 +229,7 @@ export default function EditPlaylistPage() {
               initialData={playlist}
               onSave={handleSave}
               onRefresh={fetchPlaylistData}
+              isPublished={!playlist.isDraft}
             />
           )}
         </div>
@@ -301,6 +320,17 @@ export default function EditPlaylistPage() {
           </div>
         </motion.div>
       </motion.div>
+
+      {showPublishSuccess && (
+        <PublishSuccessModal
+          playlistId={params.id as string}
+          playlistName={playlist.name}
+          onClose={() => {
+            setShowPublishSuccess(false);
+            router.push('/admin/playlists');
+          }}
+        />
+      )}
     </div>
   );
 } 

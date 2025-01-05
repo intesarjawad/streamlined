@@ -3,13 +3,14 @@
 import { useState, useMemo } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, X, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import PlaylistCard from "@/components/admin/playlist-card";
 import { usePlaylistStore } from "@/store/playlist-store";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { buttonStyles } from "@/lib/button-styles";
 
 export default function AdminPlaylistsPage() {
   const router = useRouter();
@@ -52,7 +53,10 @@ export default function AdminPlaylistsPage() {
             
             <Link href="/admin/playlists/create">
               <Button 
-                className="gap-2 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/50"
+                className={cn(
+                  "gap-2",
+                  buttonStyles.primary.default
+                )}
               >
                 <Plus className="h-4 w-4" />
                 Create New Playlist
@@ -125,7 +129,10 @@ export default function AdminPlaylistsPage() {
               </p>
               <Link href="/admin/playlists/create" className="mt-4 inline-block">
                 <Button 
-                  className="gap-2 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/50"
+                  className={cn(
+                    "gap-2",
+                    buttonStyles.primary.default
+                  )}
                 >
                   <Plus className="h-4 w-4" />
                   Create New Playlist
