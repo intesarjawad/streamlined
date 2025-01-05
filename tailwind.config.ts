@@ -64,7 +64,14 @@ export default {
   			'color-2': 'hsl(var(--color-2))',
   			'color-3': 'hsl(var(--color-3))',
   			'color-4': 'hsl(var(--color-4))',
-  			'color-5': 'hsl(var(--color-5))'
+  			'color-5': 'hsl(var(--color-5))',
+  			neon: {
+  				blue: '#00FFFF',
+  				pink: '#FF1493', 
+  				green: '#39FF14',
+  				yellow: '#FFFF00',
+  				purple: '#8A2BE2'
+  			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -221,6 +228,18 @@ export default {
   				'100%': {
   					transform: 'translateZ(0) rotate(360deg)'
   				}
+  			},
+  			glow: {
+  				'0%, 100%': { filter: 'brightness(100%)' },
+  				'50%': { filter: 'brightness(150%)' }
+  			},
+  			'neon-pulse': {
+  				'0%, 100%': { 
+  					boxShadow: '0 0 5px var(--neon-color), 0 0 10px var(--neon-color)'
+  				},
+  				'50%': { 
+  					boxShadow: '0 0 20px var(--neon-color), 0 0 30px var(--neon-color)'
+  				}
   			}
   		},
   		animation: {
@@ -241,7 +260,9 @@ export default {
   			rippling: 'rippling var(--duration) ease-out',
   			pulse: 'pulse var(--duration) ease-out infinite',
   			'shimmer-slide': 'shimmer-slide var(--speed) ease-in-out infinite alternate',
-  			'spin-around': 'spin-around calc(var(--speed) * 2) infinite linear'
+  			'spin-around': 'spin-around calc(var(--speed) * 2) infinite linear',
+  			glow: 'glow 2s ease-in-out infinite',
+  			'neon-pulse': 'neon-pulse 2s ease-in-out infinite'
   		}
   	}
   },

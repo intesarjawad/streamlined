@@ -9,7 +9,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 3000  // 3 seconds for toast display
 
 type ToasterToast = ToastProps & {
   id: string
@@ -192,3 +192,9 @@ function useToast() {
 }
 
 export { useToast, toast }
+
+export type ToastProps = React.ComponentPropsWithoutRef<typeof Toast> & {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive" | "success";
+};
