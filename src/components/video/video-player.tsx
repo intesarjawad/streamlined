@@ -19,6 +19,8 @@ interface VideoPlayerProps {
   onEnded?: () => void;
 }
 
+const SECURE_PLAYER = process.env.NEXT_PUBLIC_SECURE_VIDEO_PLAYER === 'true';
+
 export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
   const playerRef = useRef<YouTubePlayer>(null);
   const [player, setPlayer] = useState<YouTubePlayer | null>(null);
@@ -46,6 +48,32 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
     }
     return () => clearTimeout(timeout);
   }, [showControls, playing]);
+
+  useEffect(() => {
+    if (!SECURE_PLAYER) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeydown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeydown);
+    };
+  }, []);
 
   const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -170,7 +198,17 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
       showinfo: 0,
       iv_load_policy: 3,
       fs: 0,
+      disablekb: 1,
+      playsinline: 1,
+      origin: window.location.origin,
+      enablejsapi: 1,
+      autohide: 1,
+      cc_load_policy: 0,
+      hl: 'en',
+      color: 'white',
+      endscreen: 0,
     },
+    host: 'https://www.youtube-nocookie.com',
   };
 
   const handleFullscreen = () => {
@@ -204,35 +242,80 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
       onMouseMove={() => setShowControls(true)}
       onMouseLeave={() => playing && setShowControls(false)}
     >
+      {/* Protective overlay - Only render if SECURE_PLAYER is true */}
+      {SECURE_PLAYER && (
+        <div 
+          className="absolute inset-0 z-10 pointer-events-auto"
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('.video-controls')) {
+              return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            togglePlay();
+          }}
+        />
+      )}
+
+      {/* CSS styles - Only include security-related styles if SECURE_PLAYER is true */}
+      <style jsx global>{`
+        ${SECURE_PLAYER ? `
+          .ytp-chrome-top,
+          .ytp-show-cards-title,
+          .ytp-watermark,
+          .ytp-youtube-button,
+          .ytp-embed,
+          .ytp-pause-overlay,
+          .ytp-chrome-top-buttons,
+          .ytp-title-text,
+          .ytp-title,
+          .ytp-title-link,
+          .ytp-share-button,
+          .ytp-share-button-visible,
+          .ytp-copylink-button,
+          .ytp-copylink,
+          [data-title-copy-button],
+          [data-layer="copy-link-button"],
+          .ytp-chrome-controls-right {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          .ytp-player-content,
+          .ytp-chrome-bottom {
+            display: none !important;
+          }
+
+          iframe[src*="youtube"] {
+            isolation: isolate;
+          }
+        ` : ''}
+      `}</style>
+
       <YouTube
         ref={playerRef}
         videoId={videoId}
-        opts={{
-          ...opts,
-          width: '100%',
-          height: '100%',
-          playerVars: {
-            ...opts.playerVars,
-            playsinline: 1,
-            vq: quality // Use current quality setting
-          }
-        }}
+        opts={opts}
         onReady={handleReady}
         onStateChange={handleStateChange}
         className="absolute inset-0 w-full h-full"
         style={{ position: 'absolute' }}
+        iframeClassName="w-full h-full"
       />
 
       {/* Video Controls */}
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showControls ? 1 : 0 }}
         className={cn(
-          "absolute bottom-0 left-0 right-0",
+          "video-controls",
+          "absolute bottom-0 left-0 right-0 z-20",
           "p-6 pb-4",
           "bg-gradient-to-t from-black/90 via-black/50 to-transparent",
           "transition-opacity duration-200"
         )}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showControls ? 1 : 0 }}
       >
         {/* Title */}
         <h2 className="text-white text-lg font-medium mb-4 line-clamp-1">

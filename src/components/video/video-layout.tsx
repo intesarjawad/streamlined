@@ -50,50 +50,47 @@ export function VideoLayout({ playlist, initialVideoIndex = 0 }: VideoLayoutProp
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Effects with smoother transitions */}
+      {/* Background Effects */}
       <motion.div 
         className="absolute inset-0 bg-gradient-to-b from-black via-background to-background opacity-80"
         layout
-        transition={{ duration: TRANSITION_DURATION, ease: TRANSITION_EASE }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
       />
 
       {/* Content */}
-      <div className="relative flex h-screen">
+      <div className="relative flex flex-col lg:flex-row h-screen">
         {/* Main Content Area */}
         <motion.div
           layout
           className={cn(
             "flex-1 flex flex-col",
-            "h-screen",
-            "p-8"
+            // Desktop sizing and padding
+            "lg:p-8 lg:max-h-screen",
+            // Mobile sizing and padding - reduced video height to leave room for sidebar
+            "p-4 max-h-[45vh] sm:max-h-[50vh]", // Reduced from 60vh/65vh
+            // Width handling
+            "w-full lg:max-w-[calc(100%-350px)]",
+            isSidebarCollapsed && "lg:max-w-[calc(100%-60px)]",
+            "transition-all duration-300 ease-in-out"
           )}
-          transition={{
-            duration: 0.2,
-            ease: "easeInOut"
-          }}
         >
           {/* Video Container */}
-          <motion.div 
-            layout
-            className="relative w-full"
-            style={{ 
-              maxHeight: "calc(100vh - 120px)",
-              height: "calc((100vw - 400px) * 0.5625)"
-            }}
-          >
-            <MagicCard className="w-full h-full">
-              <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
-                <VideoPlayer
-                  videoId={currentVideo.id}
-                  title={currentVideo.title}
-                  onEnded={handleVideoEnd}
-                />
-              </div>
-            </MagicCard>
-          </motion.div>
+          <div className="relative w-full h-full">
+            <div className="absolute inset-0">
+              <MagicCard className="w-full h-full">
+                <div className="relative w-full h-full">
+                  <VideoPlayer
+                    videoId={currentVideo.id}
+                    title={currentVideo.title}
+                    onEnded={handleVideoEnd}
+                  />
+                </div>
+              </MagicCard>
+            </div>
+          </div>
 
           {/* Video Count */}
-          <div className="mt-3 flex items-center gap-2 text-white/60">
+          <div className="mt-4 flex items-center gap-2 text-white/60">
             <Clock className="h-4 w-4" />
             <span>Video {currentVideoIndex + 1} of {playlist.videos.length}</span>
           </div>
@@ -102,15 +99,18 @@ export function VideoLayout({ playlist, initialVideoIndex = 0 }: VideoLayoutProp
         {/* Playlist Sidebar */}
         <motion.div
           layout
-          className="h-screen border-l border-white/5"
-          style={{
-            width: isSidebarCollapsed ? '0' : '350px',
-            overflow: 'hidden'
-          }}
-          transition={{
-            duration: 0.2,
-            ease: "easeInOut"
-          }}
+          className={cn(
+            // Mobile: Fixed height with vertical scroll
+            "h-[45vh] w-full overflow-y-auto lg:overflow-visible",
+            // Desktop: Full height, fixed width
+            "lg:h-screen lg:flex-none lg:w-[350px]",
+            // Border styles
+            "border-t lg:border-l border-white/5",
+            // Collapse handling
+            isSidebarCollapsed && "lg:w-[60px]",
+            // Transition
+            "transition-all duration-300 ease-in-out"
+          )}
         >
           <PlaylistSidebar
             playlist={playlist}
@@ -118,16 +118,18 @@ export function VideoLayout({ playlist, initialVideoIndex = 0 }: VideoLayoutProp
             onVideoSelect={setCurrentVideoIndex}
             isCollapsed={isSidebarCollapsed}
             onCollapsedChange={setIsSidebarCollapsed}
-            className="rounded-l-lg"
+            className="h-full w-full rounded-t-lg lg:rounded-l-lg lg:rounded-t-none"
           />
         </motion.div>
 
-        {/* Collapse Button */}
-        <div className="absolute right-[350px] top-1/2 -translate-y-1/2 z-10" 
-          style={{
-            right: isSidebarCollapsed ? '0' : '350px',
-            transition: 'right 0.2s ease-in-out'
-          }}
+        {/* Collapse Button - Desktop only */}
+        <div 
+          className={cn(
+            "hidden lg:block absolute z-10",
+            "top-1/2 -translate-y-1/2",
+            isSidebarCollapsed ? "right-[60px]" : "right-[350px]",
+            "transition-all duration-200 ease-in-out"
+          )}
         >
           <Button
             variant="ghost"
