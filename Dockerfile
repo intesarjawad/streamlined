@@ -4,7 +4,9 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json ./
-COPY .npmrc ./
+
+# Create .npmrc with legacy peer deps config
+RUN echo "legacy-peer-deps=true" > .npmrc
 
 # Install dependencies with legacy peer deps
 RUN npm install --legacy-peer-deps
@@ -18,9 +20,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set environment variables for build
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
-ENV NEXT_PUBLIC_SECURE_VIDEO_PLAYER false
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_SECURE_VIDEO_PLAYER=false
 
 # Build the application
 RUN npm run build
@@ -29,9 +31,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NEXT_PUBLIC_SECURE_VIDEO_PLAYER false
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_SECURE_VIDEO_PLAYER=false
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
@@ -51,8 +53,8 @@ USER nextjs
 # Expose the port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # Start the application
 CMD ["node", "server.js"] 
