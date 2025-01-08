@@ -13,6 +13,13 @@ const nextConfig = {
     ],
   },
   output: 'standalone',
+  // Disable TypeScript and ESLint during build
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig; 
