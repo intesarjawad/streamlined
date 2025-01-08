@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { MagicCard } from "@/components/ui/magic-card";
 import { Button } from "@/components/ui/button";
-import { Clock, Check, PlayCircle } from "lucide-react";
+import { Clock, Check, PlayCircle, X } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePlaylistStore } from "@/store/playlist-store";
@@ -33,7 +33,7 @@ export default function HomePage() {
   const { searchQuery } = useSearchStore();
   const [selectedTag, setSelectedTag] = useState<string>("All");
   const router = useRouter();
-  const { items: continueWatchingItems } = useContinueWatchingStore();
+  const { items: continueWatchingItems, removeFromHistory } = useContinueWatchingStore();
 
   // Reset tag selection when searching
   useEffect(() => {
@@ -125,10 +125,10 @@ export default function HomePage() {
             {/* Continue Watching Section */}
             {mounted && continueWatchingPlaylists.length > 0 && (
               <section>
-                <h2 className="text-2xl font-semibold mb-6"> {/* Increased margin */}
+                <h2 className="text-2xl font-semibold mb-6">
                   Continue Watching
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"> {/* Increased gap */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {continueWatchingPlaylists.map((playlist) => (
                     <motion.div
                       key={playlist.id}
@@ -167,47 +167,29 @@ export default function HomePage() {
                                   )}
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    router.push(`/playlists/${playlist.id}`);
+                                    router.push(`/playlists/${playlist.id}?v=${
+                                      continueWatchingItems.find(item => item.playlistId === playlist.id)?.videoIndex || 0
+                                    }`);
                                   }}
                                 >
-                                  Watch Now
+                                  Continue Watching
                                 </Button>
+                                
+                                {/* Only show the remove button */}
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className={cn(
-                                    "text-white hover:text-neon-blue",
-                                    "hover:bg-black/80",
-                                    isInWatchLater(playlist.id) && "text-neon-blue"
-                                  )}
+                                  className="text-white/60 hover:text-red-400 hover:bg-black/80"
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    if (isInWatchLater(playlist.id)) {
-                                      removeFromWatchLater(playlist.id);
-                                      toast({
-                                        title: "Removed from My List",
-                                        description: "This playlist has been removed from your list",
-                                      });
-                                    } else {
-                                      addToWatchLater(playlist.id);
-                                      toast({
-                                        title: "Added to My List",
-                                        description: "This playlist has been added to your list",
-                                      });
-                                    }
+                                    removeFromHistory(playlist.id);
+                                    toast({
+                                      title: "Removed from Continue Watching",
+                                      description: "This playlist has been removed from your continue watching list",
+                                    });
                                   }}
                                 >
-                                  {isInWatchLater(playlist.id) ? (
-                                    <>
-                                      <Check className="h-4 w-4 mr-2" />
-                                      Added
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Clock className="h-4 w-4 mr-2" />
-                                      Add to My List
-                                    </>
-                                  )}
+                                  <X className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>

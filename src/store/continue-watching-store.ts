@@ -11,6 +11,7 @@ interface ContinueWatchingStore {
   items: ContinueWatching[];
   addToHistory: (playlistId: string, videoIndex: number) => void;
   removeFromHistory: (playlistId: string) => void;
+  clearHistory: () => void;
 }
 
 export const useContinueWatchingStore = create<ContinueWatchingStore>()(
@@ -28,7 +29,7 @@ export const useContinueWatchingStore = create<ContinueWatchingStore>()(
                 lastWatched: new Date()
               },
               ...filtered
-            ].slice(0, 20) // Keep only last 20 items
+            ].slice(0, 20)
           };
         });
       },
@@ -36,7 +37,8 @@ export const useContinueWatchingStore = create<ContinueWatchingStore>()(
         set((state) => ({
           items: state.items.filter(item => item.playlistId !== playlistId)
         }));
-      }
+      },
+      clearHistory: () => set({ items: [] })
     }),
     {
       name: 'continue-watching-storage'

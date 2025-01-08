@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Menu, Bell, Plus, Settings, LayoutDashboard, Clock, Library } from "lucide-react";
+import { Search, Menu, Plus, Settings, LayoutDashboard, Library } from "lucide-react";
 import Link from "next/link";
 import { buttonStyles } from "@/lib/button-styles";
 import {
@@ -59,12 +59,6 @@ export function NavHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <Link href="/watch-later">
-                  <DropdownMenuItem>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Watch Later
-                  </DropdownMenuItem>
-                </Link>
                 <Link href="/admin/playlists">
                   <DropdownMenuItem>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
