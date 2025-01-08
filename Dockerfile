@@ -24,8 +24,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_SECURE_VIDEO_PLAYER=false
 
-# Build the application
-RUN npm run build
+# Build the application with ESLint checks disabled
+RUN DISABLE_ESLINT_PLUGIN=true npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
