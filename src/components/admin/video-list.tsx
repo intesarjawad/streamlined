@@ -15,13 +15,14 @@ interface Video {
   title: string;
   duration: string;
   thumbnail: string;
+  url: string;
 }
 
 interface VideoListProps {
   videos: Video[];
   onReorder: (videos: Video[]) => void;
-  onVideoUpdate?: (id: string, updates: Partial<Video>) => void;
-  onVideoDelete?: (id: string) => void;
+  onVideoUpdate: (videoId: string, updates: Partial<Video>) => void;
+  onVideoDelete: (videoId: string) => void;
 }
 
 export function VideoList({ videos, onReorder, onVideoUpdate, onVideoDelete }: VideoListProps) {

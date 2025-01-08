@@ -28,6 +28,7 @@ export default function EditPlaylistPage() {
   
   const updatePlaylist = usePlaylistStore((state) => state.updatePlaylist);
   const playlists = usePlaylistStore((state) => state.playlists);
+  const deletePlaylist = usePlaylistStore((state) => state.deletePlaylist);
 
   useEffect(() => {
     const playlistId = params.id as string;
@@ -131,6 +132,42 @@ export default function EditPlaylistPage() {
     }
   };
 
+  const handleDiscard = async () => {
+    try {
+      deletePlaylist(playlist.id);
+      toast({
+        title: "Draft Discarded",
+        description: "Your draft has been discarded.",
+        variant: "success",
+      });
+      router.push('/admin/playlists');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to discard draft",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      deletePlaylist(playlist.id);
+      toast({
+        title: "Playlist Deleted",
+        description: "Your playlist has been deleted.",
+        variant: "success",
+      });
+      router.push('/admin/playlists');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete playlist",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!playlist) return null;
 
   return (
@@ -230,6 +267,8 @@ export default function EditPlaylistPage() {
               onSave={handleSave}
               onRefresh={fetchPlaylistData}
               isPublished={!playlist.isDraft}
+              onDiscard={playlist.isDraft ? handleDiscard : undefined}
+              onDelete={!playlist.isDraft ? handleDelete : undefined}
             />
           )}
         </div>

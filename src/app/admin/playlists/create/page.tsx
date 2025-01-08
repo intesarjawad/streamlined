@@ -30,20 +30,23 @@ interface Video {
 interface PlaylistData {
   name: string;
   videos: Video[];
-  tags?: string[];
+  tags: string[];
   description?: string;
   customThumbnail?: string;
+  youtubeUrl?: string;
+  thumbnail?: string;
 }
 
 export default function CreatePlaylistPage() {
   const router = useRouter();
-  const addPlaylist = usePlaylistStore((state) => state.addPlaylist);
+  const { addPlaylist, updatePlaylist } = usePlaylistStore();
   const [loading, setLoading] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [playlistData, setPlaylistData] = useState<PlaylistData | null>(null);
   const { toast } = useToast();
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   const [publishedId, setPublishedId] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
 
   const fetchPlaylistData = async () => {
     if (!playlistUrl) {
@@ -64,7 +67,17 @@ export default function CreatePlaylistPage() {
         throw new Error(data.error);
       }
       
-      setPlaylistData(data);
+      const initialPlaylist: PlaylistData = {
+        name: data.name || '',
+        videos: data.videos || [],
+        tags: [],
+        description: data.description || '',
+        youtubeUrl: playlistUrl,
+        thumbnail: data.videos?.[0]?.thumbnail || '',
+      };
+      
+      setPlaylistData(initialPlaylist);
+
       toast({
         title: "Success",
         description: "Playlist fetched successfully!",
@@ -82,18 +95,42 @@ export default function CreatePlaylistPage() {
 
   const handleSave = async (data: PlaylistData, isDraft: boolean) => {
     try {
-      const id = crypto.randomUUID();
-      addPlaylist({
+      const playlistToSave = {
         ...data,
-        id,
-        isDraft,
-        thumbnail: data.videos[0]?.thumbnail,
+        thumbnail: data.videos[0]?.thumbnail || "",
         youtubeUrl: playlistUrl,
+      };
+
+      if (isDraft && draftId) {
+        updatePlaylist(draftId, {
+          ...playlistToSave,
+          isDraft: true,
+          updatedAt: new Date(),
+        });
+      } else {
+        const newId = crypto.randomUUID();
+        const newPlaylist = {
+          ...playlistToSave,
+          id: newId,
+          isDraft: isDraft,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        
+        if (isDraft) {
+          setDraftId(newId);
+        }
+        
+        addPlaylist(newPlaylist);
+      }
+
+      setPlaylistData({
+        ...playlistToSave,
+        tags: playlistToSave.tags || [],
       });
-      
+
       if (!isDraft) {
-        setPublishedId(id);
-        setShowPublishSuccess(true);
+        router.push('/admin/playlists');
       } else {
         toast({
           title: "Draft Saved",
@@ -104,7 +141,7 @@ export default function CreatePlaylistPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save playlist. Please try again.",
+        description: "Failed to save playlist",
         variant: "destructive",
       });
     }
@@ -224,10 +261,7 @@ export default function CreatePlaylistPage() {
               }}
             >
               <PlaylistEditor
-                initialData={{
-                  ...playlistData,
-                  youtubeUrl: playlistUrl,
-                }}
+                initialData={playlistData}
                 onSave={handleSave}
                 onRefresh={async () => {
                   await fetchPlaylistData();
