@@ -35,6 +35,11 @@
       hsl(var(--neon-purple))
     );
   }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
 }
 
 /* Neon text utility classes */
@@ -95,12 +100,6 @@
   .bg-dot-pattern, .bg-glow {
     display: none;
   }
-}
-
-/* Default font settings */
-body {
-  font-family: 'Geist', sans-serif;
-  @apply bg-background text-foreground antialiased;
 }
 
 @keyframes float {

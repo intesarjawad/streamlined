@@ -28,6 +28,8 @@ import { PublishedUrlCard } from "@/components/admin/published-url-card";
 import { buttonStyles } from "@/lib/button-styles";
 import { typographyStyles } from "@/lib/typography-styles";
 import { SEMESTER_TAGS } from "@/lib/constants";
+import { useMounted } from "@/hooks/use-mounted";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 interface Video {
   id: string;
@@ -64,6 +66,7 @@ export default function PlaylistEditor({
   onDiscard,
   onDelete
 }: PlaylistEditorProps) {
+  const mounted = useMounted();
   const [data, setData] = useState<PlaylistData>({
     ...initialData,
     tags: initialData.tags || [],
@@ -78,16 +81,31 @@ export default function PlaylistEditor({
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!mounted) return;
+    
     setData({
       ...initialData,
       tags: initialData.tags || [],
     });
-  }, [initialData]);
+  }, [mounted, initialData]);
 
   useEffect(() => {
     const hasDataChanged = JSON.stringify(data) !== JSON.stringify(initialData);
     setHasChanges(hasDataChanged);
   }, [data, initialData]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    // Initialize any browser APIs here
+  }, [mounted]);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <LoadingSkeleton className="h-[400px]" />
+      </div>
+    );
+  }
 
   const handleDataChange = (newData: Partial<PlaylistData>) => {
     setData(prev => ({ ...prev, ...newData }));

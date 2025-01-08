@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { MagicCard } from "@/components/ui/magic-card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { PlaylistPlaceholder } from "@/components/admin/playlist-placeholder";
 import { PublishSuccessModal } from "@/components/admin/publish-success-modal";
 import { PublishedUrlCard } from "@/components/admin/published-url-card";
 import { buttonStyles } from "@/lib/button-styles";
+import { useMounted } from "@/hooks/use-mounted";
 
 interface Video {
   id: string;
@@ -47,6 +48,16 @@ export default function CreatePlaylistPage() {
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   const [publishedId, setPublishedId] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const mounted = useMounted();
+
+  useEffect(() => {
+    if (!mounted) return;
+    // Move any browser API calls here
+  }, [mounted]);
+
+  if (!mounted) {
+    return null; // or a loading skeleton
+  }
 
   const fetchPlaylistData = async () => {
     if (!playlistUrl) {
