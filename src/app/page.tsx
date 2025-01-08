@@ -1,101 +1,558 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { motion } from "motion/react";
+import { MagicCard } from "@/components/ui/magic-card";
+import { Button } from "@/components/ui/button";
+import { Clock, Check, PlayCircle } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { usePlaylistStore } from "@/store/playlist-store";
+import { ClientOnly } from "@/components/ui/client-only";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { useMounted } from "@/hooks/use-mounted";
+import { useWatchLaterStore } from "@/store/watch-later-store";
+import { useToast } from "@/hooks/use-toast";
+import { SEMESTER_TAGS } from "@/lib/constants";
+import { useSearchStore } from "@/store/search-store";
+import { useRouter } from "next/navigation";
+import { calculateTotalDuration } from "@/lib/format";
+import type { Video } from "@/types";
+import { useContinueWatchingStore } from "@/store/continue-watching-store";
+
+export default function HomePage() {
+  const mounted = useMounted();
+  const playlists = usePlaylistStore(state => state.playlists);
+  const { 
+    addToWatchLater, 
+    removeFromWatchLater, 
+    isInWatchLater,
+    watchLater 
+  } = useWatchLaterStore();
+  const { toast } = useToast();
+  const { searchQuery } = useSearchStore();
+  const [selectedTag, setSelectedTag] = useState<string>("All");
+  const router = useRouter();
+  const { items: continueWatchingItems } = useContinueWatchingStore();
+
+  // Reset tag selection when searching
+  useEffect(() => {
+    if (searchQuery) {
+      setSelectedTag("All");
+    }
+  }, [searchQuery]);
+
+  // Filter playlists
+  const filteredPlaylists = playlists.filter(playlist => {
+    if (playlist.isDraft) return false;
+    
+    const matchesSearch = searchQuery === "" || 
+      playlist.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      playlist.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesTag = selectedTag === "All" || 
+      playlist.tags?.includes(selectedTag);
+
+    return matchesSearch && matchesTag;
+  });
+
+  // Get playlists for continue watching
+  const continueWatchingPlaylists = playlists.filter(playlist => 
+    !playlist.isDraft && continueWatchingItems.some(item => item.playlistId === playlist.id)
+  ).sort((a, b) => {
+    const aDate = continueWatchingItems.find(item => item.playlistId === a.id)?.lastWatched || new Date(0);
+    const bDate = continueWatchingItems.find(item => item.playlistId === b.id)?.lastWatched || new Date(0);
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+
+  // Get watch later playlists
+  const watchLaterPlaylists = playlists.filter(playlist => 
+    !playlist.isDraft && watchLater.includes(playlist.id)
+  );
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <ClientOnly>
+      <div className="min-h-screen bg-black">
+        {/* Semester Tags Filter - Full width with subtle padding */}
+        <div className="border-b border-white/[0.04] overflow-x-auto">
+          <div className="max-w-[90%] mx-auto px-4 md:px-8">
+            <div className="flex py-3 gap-2">
+              <Button
+                key="all"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "rounded-full whitespace-nowrap",
+                  "hover:bg-neon-blue/10 hover:text-neon-blue hover:border-neon-blue/30",
+                  "text-sm font-normal",
+                  "transition-all duration-300 ease-in-out",
+                  "border border-transparent",
+                  selectedTag === "All" 
+                    ? "bg-neon-blue/20 text-neon-blue border-neon-blue/50 shadow-[0_0_10px_rgba(0,255,255,0.1)]"
+                    : "text-white/70"
+                )}
+                onClick={() => setSelectedTag("All")}
+              >
+                All
+              </Button>
+              {SEMESTER_TAGS.map((tag) => (
+                <Button
+                  key={tag}
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "rounded-full whitespace-nowrap",
+                    "hover:bg-neon-blue/10 hover:text-neon-blue hover:border-neon-blue/30",
+                    "text-sm font-normal",
+                    "transition-all duration-300 ease-in-out",
+                    "border border-transparent",
+                    selectedTag === tag 
+                      ? "bg-neon-blue/20 text-neon-blue border-neon-blue/50 shadow-[0_0_10px_rgba(0,255,255,0.1)]"
+                      : "text-white/70"
+                  )}
+                  onClick={() => setSelectedTag(tag)}
+                >
+                  {tag}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* Main Content - More elegant spacing */}
+        <div className="max-w-[90%] mx-auto px-4 md:px-8">
+          <div className="py-8 space-y-16"> {/* Increased vertical spacing */}
+            {/* Continue Watching Section */}
+            {mounted && continueWatchingPlaylists.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-semibold mb-6"> {/* Increased margin */}
+                  Continue Watching
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"> {/* Increased gap */}
+                  {continueWatchingPlaylists.map((playlist) => (
+                    <motion.div
+                      key={playlist.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <Link href={`/playlists/${playlist.id}?v=${
+                        continueWatchingItems.find(item => item.playlistId === playlist.id)?.videoIndex || 0
+                      }`}>
+                        <MagicCard className={cn(
+                          "group relative overflow-hidden",
+                          "hover:bg-white/[0.04]",
+                          "transition-colors duration-200"
+                        )}>
+                          {/* Thumbnail Section */}
+                          <div className="relative aspect-video">
+                            {playlist.thumbnail ? (
+                              <img
+                                src={playlist.thumbnail}
+                                alt={playlist.name}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-black/50" />
+                            )}
+                            
+                            {/* Overlay Controls */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className={cn(
+                                    "bg-neon-blue hover:bg-neon-blue/90",
+                                    "text-black font-medium"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push(`/playlists/${playlist.id}`);
+                                  }}
+                                >
+                                  Watch Now
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    "text-white hover:text-neon-blue",
+                                    "hover:bg-black/80",
+                                    isInWatchLater(playlist.id) && "text-neon-blue"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (isInWatchLater(playlist.id)) {
+                                      removeFromWatchLater(playlist.id);
+                                      toast({
+                                        title: "Removed from My List",
+                                        description: "This playlist has been removed from your list",
+                                      });
+                                    } else {
+                                      addToWatchLater(playlist.id);
+                                      toast({
+                                        title: "Added to My List",
+                                        description: "This playlist has been added to your list",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  {isInWatchLater(playlist.id) ? (
+                                    <>
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Added
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="h-4 w-4 mr-2" />
+                                      Add to My List
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Content Section */}
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <h3 className="font-medium line-clamp-2 text-base">
+                                {playlist.name}
+                              </h3>
+                              {playlist.description && (
+                                <p className="text-sm text-white/60 line-clamp-2 mt-1">
+                                  {playlist.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Tags */}
+                            {playlist.tags && playlist.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {playlist.tags.map(tag => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 rounded-full text-xs bg-neon-blue/10 text-neon-blue border border-neon-blue/20"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Metadata Row */}
+                            <div className="flex items-center justify-between text-sm text-white/50">
+                              <span className="flex items-center gap-1">
+                                <PlayCircle className="h-4 w-4" />
+                                {playlist.videos.length} {playlist.videos.length === 1 ? 'video' : 'videos'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {calculateTotalDuration(playlist.videos)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+                            <div 
+                              className="h-full bg-neon-blue"
+                              style={{ 
+                                width: `${(
+                                  (continueWatchingItems.find(item => item.playlistId === playlist.id)?.videoIndex || 0) 
+                                  / playlist.videos.length
+                                ) * 100}%` 
+                              }}
+                            />
+                          </div>
+                        </MagicCard>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* My List Section */}
+            {mounted && watchLaterPlaylists.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-semibold mb-6">
+                  My List
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {watchLaterPlaylists.map((playlist) => (
+                    <motion.div
+                      key={playlist.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <Link href={`/playlists/${playlist.id}`}>
+                        <MagicCard className={cn(
+                          "group relative overflow-hidden",
+                          "hover:bg-white/[0.04]",
+                          "transition-colors duration-200"
+                        )}>
+                          {/* Thumbnail Section */}
+                          <div className="relative aspect-video">
+                            {playlist.thumbnail ? (
+                              <img
+                                src={playlist.thumbnail}
+                                alt={playlist.name}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-black/50" />
+                            )}
+                            
+                            {/* Overlay Controls */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className={cn(
+                                    "bg-neon-blue hover:bg-neon-blue/90",
+                                    "text-black font-medium"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push(`/playlists/${playlist.id}`);
+                                  }}
+                                >
+                                  Watch Now
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    "text-white hover:text-neon-blue",
+                                    "hover:bg-black/80",
+                                    isInWatchLater(playlist.id) && "text-neon-blue"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (isInWatchLater(playlist.id)) {
+                                      removeFromWatchLater(playlist.id);
+                                      toast({
+                                        title: "Removed from My List",
+                                        description: "This playlist has been removed from your list",
+                                      });
+                                    } else {
+                                      addToWatchLater(playlist.id);
+                                      toast({
+                                        title: "Added to My List",
+                                        description: "This playlist has been added to your list",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  {isInWatchLater(playlist.id) ? (
+                                    <>
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Added
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="h-4 w-4 mr-2" />
+                                      Add to My List
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Content Section */}
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <h3 className="font-medium line-clamp-2 text-base">
+                                {playlist.name}
+                              </h3>
+                              {playlist.description && (
+                                <p className="text-sm text-white/60 line-clamp-2 mt-1">
+                                  {playlist.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Tags */}
+                            {playlist.tags && playlist.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {playlist.tags.map(tag => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 rounded-full text-xs bg-neon-blue/10 text-neon-blue border border-neon-blue/20"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Metadata Row */}
+                            <div className="flex items-center justify-between text-sm text-white/50">
+                              <span className="flex items-center gap-1">
+                                <PlayCircle className="h-4 w-4" />
+                                {playlist.videos.length} {playlist.videos.length === 1 ? 'video' : 'videos'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {calculateTotalDuration(playlist.videos)}
+                              </span>
+                            </div>
+                          </div>
+                        </MagicCard>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* All Playlists Section */}
+            <section>
+              <h2 className="text-2xl font-semibold mb-6">
+                All Playlists
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {mounted ? (
+                  filteredPlaylists.map((playlist) => (
+                    <motion.div
+                      key={playlist.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Link href={`/playlists/${playlist.id}`}>
+                        <MagicCard className={cn(
+                          "group relative overflow-hidden",
+                          "hover:bg-white/[0.04]",
+                          "transition-colors duration-200"
+                        )}>
+                          {/* Thumbnail Section */}
+                          <div className="relative aspect-video">
+                            {playlist.thumbnail ? (
+                              <img
+                                src={playlist.thumbnail}
+                                alt={playlist.name}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-black/50" />
+                            )}
+                            
+                            {/* Overlay Controls */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className={cn(
+                                    "bg-neon-blue hover:bg-neon-blue/90",
+                                    "text-black font-medium"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push(`/playlists/${playlist.id}`);
+                                  }}
+                                >
+                                  Watch Now
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    "text-white hover:text-neon-blue",
+                                    "hover:bg-black/80",
+                                    isInWatchLater(playlist.id) && "text-neon-blue"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (isInWatchLater(playlist.id)) {
+                                      removeFromWatchLater(playlist.id);
+                                      toast({
+                                        title: "Removed from My List",
+                                        description: "This playlist has been removed from your list",
+                                      });
+                                    } else {
+                                      addToWatchLater(playlist.id);
+                                      toast({
+                                        title: "Added to My List",
+                                        description: "This playlist has been added to your list",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  {isInWatchLater(playlist.id) ? (
+                                    <>
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Added
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="h-4 w-4 mr-2" />
+                                      Add to My List
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Content Section */}
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <h3 className="font-medium line-clamp-2 text-base">
+                                {playlist.name}
+                              </h3>
+                              {playlist.description && (
+                                <p className="text-sm text-white/60 line-clamp-2 mt-1">
+                                  {playlist.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Tags */}
+                            {playlist.tags && playlist.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {playlist.tags.map(tag => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 rounded-full text-xs bg-neon-blue/10 text-neon-blue border border-neon-blue/20"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Metadata Row */}
+                            <div className="flex items-center justify-between text-sm text-white/50">
+                              <span className="flex items-center gap-1">
+                                <PlayCircle className="h-4 w-4" />
+                                {playlist.videos.length} {playlist.videos.length === 1 ? 'video' : 'videos'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {calculateTotalDuration(playlist.videos)}
+                              </span>
+                            </div>
+                          </div>
+                        </MagicCard>
+                      </Link>
+                    </motion.div>
+                  ))
+                ) : (
+                  // Loading skeletons...
+                  Array(12).fill(0).map((_, i) => (
+                    <LoadingSkeleton key={i} className="aspect-[1.5] rounded-lg" />
+                  ))
+                )}
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </ClientOnly>
   );
 }
