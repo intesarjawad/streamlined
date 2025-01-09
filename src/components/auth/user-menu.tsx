@@ -5,14 +5,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Settings } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
 
 export function UserMenu() {
   const { data: session } = useSession();
@@ -24,35 +22,40 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="outline-none">
-        <Avatar>
-          <AvatarImage src={session.user.image!} />
-          <AvatarFallback>{session.user.name?.[0]}</AvatarFallback>
-        </Avatar>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="flex items-center gap-2 px-2 hover:bg-white/5">
+          <span className="text-sm font-medium text-white/90 hidden sm:block">
+            {session?.user?.name}
+          </span>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={session?.user?.image!} alt={session?.user?.name!} />
+            <AvatarFallback>
+              {session?.user?.name?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-black/95 border border-white/10">
-        <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none text-white">
-              {session.user.name}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-white/10" />
+      
+      <DropdownMenuContent 
+        align="end" 
+        alignOffset={-8}
+        className="w-[200px] bg-black/95 border-white/10 p-1"
+      >
         {isAdmin && (
           <DropdownMenuItem 
             onClick={() => router.push('/admin/playlists')}
-            className="text-white hover:bg-white/10 cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-white hover:text-neon-blue hover:bg-neon-blue/10 cursor-pointer"
           >
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className="h-4 w-4" />
             Admin Dashboard
           </DropdownMenuItem>
         )}
+        
         <DropdownMenuItem 
           onClick={() => signOut()}
-          className="text-white hover:bg-white/10 cursor-pointer"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-white hover:text-neon-blue hover:bg-neon-blue/10 cursor-pointer"
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="h-4 w-4" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
