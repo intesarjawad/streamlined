@@ -13,9 +13,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSearchStore } from "@/store/search-store";
+import { LoginButton } from "@/components/auth/login-button";
+import { UserMenu } from "@/components/auth/user-menu";
+import { useSession } from "next-auth/react";
 
 export function NavHeader() {
+  const { data: session } = useSession();
   const { searchQuery, setSearchQuery } = useSearchStore();
+
+  // Don't render nav for signed out users
+  if (!session) return null;
+
+  // Early return for non-admin users
+  const showAdminControls = session?.user?.isAdmin === true;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.04] bg-black/95 backdrop-blur">
@@ -51,29 +61,25 @@ export function NavHeader() {
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-white/5">
-                  <Library className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link href="/admin/playlists">
-                  <DropdownMenuItem>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Admin Dashboard
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Link href="/admin/playlists/create">
-              <Button className={cn("gap-2", buttonStyles.primary.default)}>
-                <Plus className="h-4 w-4" />
-                Create
-              </Button>
-            </Link>
+          <div className="flex items-center gap-4">
+            {showAdminControls && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="hover:bg-white/5">
+                    <Library className="h-5 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <Link href="/admin/playlists">
+                    <DropdownMenuItem>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {session?.user ? <UserMenu /> : <LoginButton />}
           </div>
         </div>
       </div>

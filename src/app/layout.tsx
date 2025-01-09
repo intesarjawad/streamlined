@@ -4,6 +4,8 @@ import "./globals.css";
 import { RootProvider } from '@/components/providers/root-provider';
 import { cn } from "@/lib/utils";
 import { NavHeader } from "@/components/layout/nav-header";
+import { AuthProvider } from '@/components/providers/auth-provider';
+import { AuthGuard } from '@/components/providers/auth-guard';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +33,14 @@ export default function RootLayout({
         geistSans.variable,
         geistMono.variable,
       )}>
-        <RootProvider>
-          <NavHeader />
-          {children}
-        </RootProvider>
+        <AuthProvider>
+          <AuthGuard>
+            <RootProvider>
+              <NavHeader />
+              {children}
+            </RootProvider>
+          </AuthGuard>
+        </AuthProvider>
       </body>
     </html>
   );

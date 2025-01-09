@@ -162,12 +162,20 @@
 }
 
 @keyframes gradient {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .animate-gradient {
-  animation: gradient 10s ease-in-out infinite;
+  background-size: 200% 200%;
+  animation: gradient 15s ease infinite;
 }
 
 /* Add radial gradient utility */
@@ -233,5 +241,308 @@
     from { opacity: 1; }
     to { opacity: 0; }
   }
+}
+
+/* Add these to your existing animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes holographicPulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes scanlines {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 100%;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 10s linear infinite;
+}
+
+.bg-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 1px,
+    rgba(0, 100, 255, 0.1) 1px,
+    rgba(0, 100, 255, 0.1) 2px
+  );
+  background-size: 100% 4px;
+  animation: scanlines 10s linear infinite;
+}
+
+/* Glitch effect animations */
+@keyframes glitch-anim-1 {
+  0% {
+    clip-path: inset(40% 0 61% 0);
+    transform: translate(-2px, 2px);
+  }
+  20% {
+    clip-path: inset(92% 0 1% 0);
+    transform: translate(1px, -3px);
+  }
+  40% {
+    clip-path: inset(43% 0 1% 0);
+    transform: translate(-1px, 3px);
+  }
+  60% {
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(3px, 1px);
+  }
+  80% {
+    clip-path: inset(54% 0 7% 0);
+    transform: translate(-2px, -4px);
+  }
+  100% {
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(2px, 2px);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0% {
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(2px, -2px);
+  }
+  20% {
+    clip-path: inset(30% 0 61% 0);
+    transform: translate(-3px, 1px);
+  }
+  40% {
+    clip-path: inset(54% 0 7% 0);
+    transform: translate(1px, -3px);
+  }
+  60% {
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(-2px, 2px);
+  }
+  80% {
+    clip-path: inset(43% 0 1% 0);
+    transform: translate(3px, -1px);
+  }
+  100% {
+    clip-path: inset(92% 0 1% 0);
+    transform: translate(-2px, 2px);
+  }
+}
+
+.glitch-layer-1 {
+  animation: glitch-anim-1 3s infinite linear alternate-reverse;
+  text-shadow: 2px 0 #0ff;
+  opacity: 0.75;
+}
+
+.glitch-layer-2 {
+  animation: glitch-anim-2 2.7s infinite linear alternate-reverse;
+  text-shadow: -2px 0 #0ff;
+  opacity: 0.75;
+}
+
+/* Add a subtle hover effect */
+.clip-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Add a subtle scan line effect */
+.glitch-layer-1::before,
+.glitch-layer-2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(0, 255, 255, 0.5);
+  animation: scan-line 4s linear infinite;
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* Add a subtle glow effect */
+.glitch-layer-1,
+.glitch-layer-2 {
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+}
+
+/* Add low intensity glitch */
+@keyframes glitch-anim-1-low {
+  0%, 100% { 
+    clip-path: inset(40% 0 61% 0);
+    transform: translate(-1px, 1px);
+  }
+  50% { 
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(1px, -1px);
+  }
+}
+
+@keyframes glitch-anim-2-low {
+  0%, 100% { 
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(1px, -1px);
+  }
+  50% { 
+    clip-path: inset(30% 0 61% 0);
+    transform: translate(-1px, 1px);
+  }
+}
+
+/* Add high intensity glitch */
+@keyframes glitch-anim-1-high {
+  0% {
+    clip-path: inset(40% 0 61% 0);
+    transform: translate(-3px, 3px);
+  }
+  20% {
+    clip-path: inset(92% 0 1% 0);
+    transform: translate(2px, -4px);
+  }
+  40% {
+    clip-path: inset(43% 0 1% 0);
+    transform: translate(-2px, 4px);
+  }
+  60% {
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(4px, 2px);
+  }
+  80% {
+    clip-path: inset(54% 0 7% 0);
+    transform: translate(-3px, -5px);
+  }
+  100% {
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(3px, 3px);
+  }
+}
+
+@keyframes glitch-anim-2-high {
+  0% {
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(3px, -3px);
+  }
+  20% {
+    clip-path: inset(30% 0 61% 0);
+    transform: translate(-4px, 2px);
+  }
+  40% {
+    clip-path: inset(54% 0 7% 0);
+    transform: translate(2px, -4px);
+  }
+  60% {
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(-3px, 3px);
+  }
+  80% {
+    clip-path: inset(43% 0 1% 0);
+    transform: translate(4px, -2px);
+  }
+  100% {
+    clip-path: inset(92% 0 1% 0);
+    transform: translate(-3px, 3px);
+  }
+}
+
+.glitch-layer-1-low {
+  animation: glitch-anim-1-low 4s infinite linear alternate-reverse;
+  text-shadow: 1px 0 #0ff;
+  opacity: 0.5;
+}
+
+.glitch-layer-2-low {
+  animation: glitch-anim-2-low 4s infinite linear alternate-reverse;
+  text-shadow: -1px 0 #0ff;
+  opacity: 0.5;
+}
+
+.glitch-layer-1-high {
+  animation: glitch-anim-1-high 2s infinite linear alternate-reverse;
+  text-shadow: 3px 0 #0ff;
+  opacity: 0.8;
+}
+
+.glitch-layer-2-high {
+  animation: glitch-anim-2-high 1.8s infinite linear alternate-reverse;
+  text-shadow: -3px 0 #0ff;
+  opacity: 0.8;
+}
+
+/* Add subtle intensity glitch */
+@keyframes glitch-anim-1-subtle {
+  0%, 100% { 
+    clip-path: inset(40% 0 61% 0);
+    transform: translate(-0.5px, 0.5px);
+  }
+  50% { 
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(0.5px, -0.5px);
+  }
+}
+
+@keyframes glitch-anim-2-subtle {
+  0%, 100% { 
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(0.5px, -0.5px);
+  }
+  50% { 
+    clip-path: inset(30% 0 61% 0);
+    transform: translate(-0.5px, 0.5px);
+  }
+}
+
+.glitch-layer-1-subtle {
+  animation: glitch-anim-1-subtle 6s infinite linear alternate-reverse;
+  text-shadow: 0.5px 0 #0ff;
+  opacity: 0.3;
+}
+
+.glitch-layer-2-subtle {
+  animation: glitch-anim-2-subtle 6s infinite linear alternate-reverse;
+  text-shadow: -0.5px 0 #0ff;
+  opacity: 0.3;
+}
+
+/* Also adjust the low intensity for the title */
+.glitch-layer-1-low {
+  animation: glitch-anim-1-low 5s infinite linear alternate-reverse; /* Slower animation */
+  text-shadow: 1px 0 #0ff;
+  opacity: 0.4; /* Reduced opacity */
+}
+
+.glitch-layer-2-low {
+  animation: glitch-anim-2-low 5s infinite linear alternate-reverse; /* Slower animation */
+  text-shadow: -1px 0 #0ff;
+  opacity: 0.4; /* Reduced opacity */
 }
 
