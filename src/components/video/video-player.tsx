@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { 
   Play, Pause, Volume2, VolumeX, 
   Settings, Maximize, SkipBack, SkipForward,
-  ChevronUp, ChevronDown, Check, Clock
+  ChevronUp, ChevronDown, Check, Gauge
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -335,7 +335,7 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
               variant="ghost"
               size="icon"
               onClick={togglePlay}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:text-neon-blue hover:bg-neon-blue/10"
             >
               {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
@@ -344,7 +344,7 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
               variant="ghost"
               size="icon"
               onClick={skipBackward}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:text-neon-blue hover:bg-neon-blue/10"
             >
               <SkipBack className="h-5 w-5" />
             </Button>
@@ -353,7 +353,7 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
               variant="ghost"
               size="icon"
               onClick={skipForward}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:text-neon-blue hover:bg-neon-blue/10"
             >
               <SkipForward className="h-5 w-5" />
             </Button>
@@ -363,7 +363,7 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
                 variant="ghost"
                 size="icon"
                 onClick={toggleMute}
-                className="text-white hover:bg-white/20"
+                className="text-white hover:text-neon-blue hover:bg-neon-blue/10"
               >
                 {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
               </Button>
@@ -388,17 +388,13 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setActiveSettings(activeSettings === 'speed' ? null : 'speed')}
-                className="text-white hover:bg-white/20 h-9 w-9"
+                className="text-white hover:text-neon-blue hover:bg-neon-blue/10 h-9 w-9"
               >
-                <Clock className="h-4 w-4" />
+                <Gauge className="h-4 w-4" />
               </Button>
 
               {activeSettings === 'speed' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 bottom-full mb-2 bg-black/90 rounded-lg overflow-hidden"
-                >
+                <motion.div className="absolute right-0 bottom-full mb-2 bg-black/90 rounded-lg overflow-hidden">
                   <div className="py-1">
                     {PLAYBACK_SPEEDS.map(rate => (
                       <button
@@ -408,8 +404,8 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
                           setActiveSettings(null);
                         }}
                         className={cn(
-                          "w-full px-4 py-1.5 text-sm text-white/90 hover:bg-white/10 flex items-center",
-                          playbackRate === rate && "bg-white/20 text-white"
+                          "w-full px-4 py-1.5 text-sm text-white hover:text-neon-blue hover:bg-neon-blue/10",
+                          playbackRate === rate && "bg-neon-blue/20 text-neon-blue"
                         )}
                       >
                         {rate === 1 ? 'Normal' : `${rate}x`}
@@ -424,7 +420,7 @@ export function VideoPlayer({ videoId, title, onEnded }: VideoPlayerProps) {
               variant="ghost"
               size="icon"
               onClick={handleFullscreen}
-              className="text-white hover:bg-white/20 h-9 w-9"
+              className="text-white hover:text-neon-blue hover:bg-neon-blue/10 h-9 w-9"
             >
               <Maximize className="h-4 w-4" />
             </Button>
